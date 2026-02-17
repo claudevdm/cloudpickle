@@ -81,7 +81,6 @@ import weakref
 # cloudpickle. See: tests/test_backward_compat.py
 from types import CellType  # noqa: F401
 
-
 # cloudpickle is meant for inter process communication: we expect all
 # communicating processes to run the same Python version hence we favor
 # communication speed over compatibility:
@@ -235,9 +234,12 @@ def _is_registered_pickle_by_value(module):
 
 
 if sys.version_info >= (3, 14):
+
     def _getattribute(obj, name):
-        return _pickle_getattribute(obj, name.split('.'))
+        return _pickle_getattribute(obj, name.split("."))
+
 else:
+
     def _getattribute(obj, name):
         return _pickle_getattribute(obj, name)[0]
 
@@ -851,6 +853,12 @@ def _class_getstate(obj):
 
     clsdict.pop("__dict__", None)  # unpicklable property object
 
+    if sys.version_info >= (3, 14):
+        # PEP-649/749: __annotate_func__ contains a closure that references the class
+        # dict. We need to exclude it from pickling. Python will recreate it when
+        # __annotations__ is accessed at unpickling time.
+        clsdict.pop("__annotate_func__", None)
+
     return (clsdict, {})
 
 
@@ -896,6 +904,13 @@ def _code_reduce(obj, config: CloudPickleConfig):
     # Hack to circumvent non-predictable memoization caused by string interning.
     # See the inline comment in _class_setstate for details.
     co_name = "".join(obj.co_name)
+
+    # co_filename is not used in the constructor of code objects, so we can
+    # safely set it to indicate that this is dynamic code. This also makes
+    # the payload deterministic, independent of where the function is defined
+    # which is especially useful when defining classes in jupyter/ipython
+    # cells which do not have a deterministic filename.
+    co_filename = "".join("<dynamic-code>")
 
     # Create shallow copies of these tuple to make cloudpickle payload deterministic.
     # When creating a code object during load, copies of these four tuples are
@@ -1270,6 +1285,10 @@ def _class_setstate(obj, state, skip_reset_dynamic_type_state=False):
       if registry is not None:
           for subclass in registry:
               obj.register(subclass)
+
+    # PEP-649/749: During pickling, we excluded the __annotate_func__ attribute but it
+    # will be created by Python. Subsequently, annotations will be recreated when
+    # __annotations__ is accessed.
 
     return obj
 

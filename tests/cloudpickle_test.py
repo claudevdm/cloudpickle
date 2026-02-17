@@ -56,7 +56,6 @@ from .testutils import assert_run_python_script
 from .testutils import check_deterministic_pickle
 from .testutils import get_config
 
-
 _TEST_GLOBAL_VARIABLE = "default_value"
 _TEST_GLOBAL_VARIABLE2 = "another_value"
 
@@ -365,7 +364,6 @@ class CloudPickleTest(unittest.TestCase):
             A_roundtrip = self.pickle_depickle(A)
             assert hasattr(A_roundtrip, "__firstlineno__")
             assert A_roundtrip.__firstlineno__ == A.__firstlineno__
-
 
     def test_dynamically_generated_class_that_uses_super(self):
         class Base:
@@ -1081,7 +1079,9 @@ class CloudPickleTest(unittest.TestCase):
         def f():
             x = {tup}
             return zlib.crc32(bytes(bytearray(x)))
-        """.format(tup=", ".join(names))
+        """.format(
+            tup=", ".join(names)
+        )
         exec(textwrap.dedent(code), d, d)
         f = d["f"]
         res = f()
@@ -1220,7 +1220,9 @@ class CloudPickleTest(unittest.TestCase):
             logging.basicConfig(level=logging.INFO)
             logger = cloudpickle.loads(base64.b32decode(b'{}'))
             logger.info('hello')
-            """.format(base64.b32encode(dumped).decode("ascii"))
+            """.format(
+            base64.b32encode(dumped).decode("ascii")
+        )
         proc = subprocess.Popen(
             [sys.executable, "-W ignore", "-c", code],
             stdout=subprocess.PIPE,
@@ -1523,7 +1525,8 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_importing_multiprocessing_does_not_impact_whichmodule(self):
         # non-regression test for #528
-        script = textwrap.dedent("""
+        script = textwrap.dedent(
+            """
         import multiprocessing
         import cloudpickle
         from cloudpickle.cloudpickle import dumps
@@ -1533,7 +1536,8 @@ class CloudPickleTest(unittest.TestCase):
         dumps.__module__ = None
 
         print(cloudpickle.cloudpickle._whichmodule(dumps, dumps.__name__))
-        """)
+        """
+        )
         script_path = Path(self.tmpdir) / "whichmodule_and_multiprocessing.py"
         with open(script_path, mode="w") as f:
             f.write(script)
@@ -1546,7 +1550,6 @@ class CloudPickleTest(unittest.TestCase):
         out, _ = proc.communicate()
         self.assertEqual(proc.wait(), 0, msg="Stdout: " + str(out))
         self.assertEqual(out.strip(), b"cloudpickle.cloudpickle")
-
 
     def test_unrelated_faulty_module(self):
         # Check that pickling a dynamically defined function or class does not
@@ -2713,6 +2716,22 @@ class CloudPickleTest(unittest.TestCase):
 
         C1 = self.pickle_depickle(C)
         assert C1.__annotations__ == C.__annotations__
+
+    def test_class_annotations_abstractclass(self):
+        # see https://github.com/cloudpipe/cloudpickle/issues/572
+
+        class C(abc.ABC):
+            a: int
+
+        C1 = pickle_depickle(C, protocol=self.protocol)
+        assert C1.__annotations__ == C.__annotations__
+        C2 = pickle_depickle(C1, protocol=self.protocol)
+        if sys.version_info >= (3, 14):
+            # check that __annotate_func__ is created by Python
+            assert hasattr(C2, "__annotate_func__")
+        assert C2.__annotations__ == C1.__annotations__
+        c2 = C2()
+        assert isinstance(c2, C2)
 
     def test_function_annotations(self):
         def f(a: int) -> str:
