@@ -59,13 +59,13 @@ from .testutils import get_config
 _TEST_GLOBAL_VARIABLE = "default_value"
 _TEST_GLOBAL_VARIABLE2 = "another_value"
 
+
 class RaiserOnPickle:
     def __init__(self, exc):
         self.exc = exc
 
     def __reduce__(self):
         raise self.exc
-
 
 
 def _escape(raw_filepath):
@@ -113,33 +113,33 @@ def test_extract_class_dict():
     assert clsdict["__doc__"] is None
     assert clsdict["method_c"](C()) == C().method_c()
 
+
 class CloudPickleTest(unittest.TestCase):
     protocol = cloudpickle.DEFAULT_PROTOCOL
-    config = 'default'
+    config = "default"
 
     def should_maintain_isinstance_semantics(self):
-        return get_config(self.config).id_generator is not None 
+        return get_config(self.config).id_generator is not None
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="tmp_cloudpickle_test_")
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
-    
+
     def dumps(self, obj, buffer_callback=None):
         return cloudpickle.dumps(
             obj,
             protocol=self.protocol,
             buffer_callback=buffer_callback,
-            config=get_config(self.config))
-            
+            config=get_config(self.config),
+        )
 
     def pickle_depickle(self, obj):
-      """Helper function to test whether object pickled with cloudpickle can be
-      depickled with pickle
-      """
-      return pickle.loads(self.dumps(obj))
-        
+        """Helper function to test whether object pickled with cloudpickle can be
+        depickled with pickle
+        """
+        return pickle.loads(self.dumps(obj))
 
     @pytest.mark.skipif(
         platform.python_implementation() != "CPython" or sys.version_info < (3, 8, 2),
@@ -209,9 +209,7 @@ class CloudPickleTest(unittest.TestCase):
         global exit
         exit = Unpicklable()
 
-        self.assertRaises(
-            Exception, lambda: self.dumps(exit)
-        )
+        self.assertRaises(Exception, lambda: self.dumps(exit))
 
         def foo():
             sys.exit(0)
@@ -221,9 +219,7 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_memoryview(self):
         buffer_obj = memoryview(b"Hello")
-        self.assertEqual(
-            self.pickle_depickle(buffer_obj), buffer_obj.tobytes()
-        )
+        self.assertEqual(self.pickle_depickle(buffer_obj), buffer_obj.tobytes())
 
     def test_dict_keys(self):
         keys = {"a": 1, "b": 2}.keys()
@@ -263,15 +259,11 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_sliced_and_non_contiguous_memoryview(self):
         buffer_obj = memoryview(b"Hello!" * 3)[2:15:2]
-        self.assertEqual(
-            self.pickle_depickle(buffer_obj), buffer_obj.tobytes()
-        )
+        self.assertEqual(self.pickle_depickle(buffer_obj), buffer_obj.tobytes())
 
     def test_large_memoryview(self):
         buffer_obj = memoryview(b"Hello!" * int(1e7))
-        self.assertEqual(
-            self.pickle_depickle(buffer_obj), buffer_obj.tobytes()
-        )
+        self.assertEqual(self.pickle_depickle(buffer_obj), buffer_obj.tobytes())
 
     def test_lambda(self):
         self.assertEqual(self.pickle_depickle(lambda: 1)(), 1)
@@ -440,13 +432,17 @@ class CloudPickleTest(unittest.TestCase):
         clone_class = self.pickle_depickle(SomeClass)
         self.assertEqual(clone_class(1).one(), 1)
         self.assertEqual(clone_class(5).some_method(41), 7)
-        clone_class = subprocess_pickle_echo(SomeClass, self.protocol, config=self.config)
+        clone_class = subprocess_pickle_echo(
+            SomeClass, self.protocol, config=self.config
+        )
         self.assertEqual(clone_class(5).some_method(41), 7)
 
         # pickle the class instances
         self.assertEqual(self.pickle_depickle(SomeClass(1)).one(), 1)
         self.assertEqual(self.pickle_depickle(SomeClass(5)).some_method(41), 7)
-        new_instance = subprocess_pickle_echo(SomeClass(5), self.protocol, config=self.config)
+        new_instance = subprocess_pickle_echo(
+            SomeClass(5), self.protocol, config=self.config
+        )
         self.assertEqual(new_instance.some_method(41), 7)
 
         # pickle the method instances
@@ -736,7 +732,7 @@ class CloudPickleTest(unittest.TestCase):
             child_process_module_file=_escape(child_process_module_file),
             child_of_child_process_script=_escape(child_of_child_process_script),
             protocol=self.protocol,
-            config=self.config
+            config=self.config,
         )
 
         try:
@@ -898,15 +894,9 @@ class CloudPickleTest(unittest.TestCase):
 
         assert unbound_classicmethod is clsdict_classicmethod
 
-        depickled_bound_meth = self.pickle_depickle(
-            bound_classicmethod
-        )
-        depickled_unbound_meth = self.pickle_depickle(
-            unbound_classicmethod
-        )
-        depickled_clsdict_meth = self.pickle_depickle(
-            clsdict_classicmethod
-        )
+        depickled_bound_meth = self.pickle_depickle(bound_classicmethod)
+        depickled_unbound_meth = self.pickle_depickle(unbound_classicmethod)
+        depickled_clsdict_meth = self.pickle_depickle(clsdict_classicmethod)
 
         # No identity on the bound methods they are bound to different float
         # instances
@@ -921,9 +911,7 @@ class CloudPickleTest(unittest.TestCase):
         unbound_clsmethod = type(obj).fromhex  # builtin_function_or_method
 
         depickled_bound_meth = self.pickle_depickle(bound_clsmethod)
-        depickled_unbound_meth = self.pickle_depickle(
-            unbound_clsmethod
-        )
+        depickled_unbound_meth = self.pickle_depickle(unbound_clsmethod)
 
         # float.fromhex takes a string as input.
         arg = "0x1"
@@ -960,9 +948,7 @@ class CloudPickleTest(unittest.TestCase):
 
         clsdict_clsmethod = type(obj).__dict__["fromhex"]  # classmethod_descriptor
 
-        depickled_clsdict_meth = self.pickle_depickle(
-            clsdict_clsmethod
-        )
+        depickled_clsdict_meth = self.pickle_depickle(clsdict_clsmethod)
 
         # float.fromhex takes a string as input.
         arg = "0x1"
@@ -989,12 +975,8 @@ class CloudPickleTest(unittest.TestCase):
         clsdict_slotmethod = type(obj).__dict__["__repr__"]  # ditto
 
         depickled_bound_meth = self.pickle_depickle(bound_slotmethod)
-        depickled_unbound_meth = self.pickle_depickle(
-            unbound_slotmethod
-        )
-        depickled_clsdict_meth = self.pickle_depickle(
-            clsdict_slotmethod
-        )
+        depickled_unbound_meth = self.pickle_depickle(unbound_slotmethod)
+        depickled_clsdict_meth = self.pickle_depickle(clsdict_slotmethod)
 
         # No identity tests on the bound slotmethod are they are bound to
         # different float instances
@@ -1015,15 +997,9 @@ class CloudPickleTest(unittest.TestCase):
 
         assert bound_staticmethod is unbound_staticmethod
 
-        depickled_bound_meth = self.pickle_depickle(
-            bound_staticmethod
-        )
-        depickled_unbound_meth = self.pickle_depickle(
-            unbound_staticmethod
-        )
-        depickled_clsdict_meth = self.pickle_depickle(
-            clsdict_staticmethod
-        )
+        depickled_bound_meth = self.pickle_depickle(bound_staticmethod)
+        depickled_unbound_meth = self.pickle_depickle(unbound_staticmethod)
+        depickled_clsdict_meth = self.pickle_depickle(clsdict_staticmethod)
 
         assert depickled_bound_meth is bound_staticmethod
         assert depickled_unbound_meth is unbound_staticmethod
@@ -1270,7 +1246,10 @@ class CloudPickleTest(unittest.TestCase):
 
         config = get_config(self.config)
         should_maintain_isinstance_semantics = config.id_generator is not None
-        assert issubclass(MyRelatedClass, depickled_class) == should_maintain_isinstance_semantics
+        assert (
+            issubclass(MyRelatedClass, depickled_class)
+            == should_maintain_isinstance_semantics
+        )
 
     def test_abc(self):
         class AbstractClass(abc.ABC):
@@ -1667,7 +1646,7 @@ class CloudPickleTest(unittest.TestCase):
         )
 
         config = get_config(self.config)
-        should_maintain_isinstance_semantics = config.id_generator is not None 
+        should_maintain_isinstance_semantics = config.id_generator is not None
         assert isinstance(depickled_t1, MyTuple) == should_maintain_isinstance_semantics
         assert depickled_t1 == t1
         assert (depickled_MyTuple is MyTuple) == should_maintain_isinstance_semantics
@@ -1688,10 +1667,10 @@ class CloudPickleTest(unittest.TestCase):
         )
 
         config = get_config(self.config)
-        should_maintain_isinstance_semantics = config.id_generator is not None 
+        should_maintain_isinstance_semantics = config.id_generator is not None
         assert isinstance(depickled_t1, MyTuple) == should_maintain_isinstance_semantics
         assert depickled_t1 == t1
-        assert (depickled_MyTuple is MyTuple) == should_maintain_isinstance_semantics 
+        assert (depickled_MyTuple is MyTuple) == should_maintain_isinstance_semantics
         assert isinstance(depickled_t2, MyTuple) == should_maintain_isinstance_semantics
         assert depickled_t2 == t2
 
@@ -1757,7 +1736,9 @@ class CloudPickleTest(unittest.TestCase):
 
         cloned = subprocess_pickle_echo(f5, protocol={protocol}, config='{config}')
         assert cloned(7) == f5(7) == 7
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(textwrap.dedent(code))
 
     def test_interactively_defined_global_variable(self):
@@ -1818,7 +1799,9 @@ class CloudPickleTest(unittest.TestCase):
         assert new_global_var == "default_value", new_global_var
         """
         for clone_func in ["local_clone", "subprocess_pickle_echo"]:
-            code = code_template.format(protocol=self.protocol, config=self.config, clone_func=clone_func)
+            code = code_template.format(
+                protocol=self.protocol, config=self.config, clone_func=clone_func
+            )
             assert_run_python_script(textwrap.dedent(code))
 
     def test_closure_interacting_with_a_global_variable(self):
@@ -1897,7 +1880,9 @@ class CloudPickleTest(unittest.TestCase):
             # previous definition of `interactive_function`:
 
             assert w.run(wrapper_func, 41) == 40
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(code)
 
     def test_interactive_remote_function_calls_no_side_effect(self):
@@ -1941,7 +1926,9 @@ class CloudPickleTest(unittest.TestCase):
             assert is_in_main("GLOBAL_VARIABLE")
             assert not w.run(is_in_main, "GLOBAL_VARIABLE")
 
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(code)
 
     def test_interactive_dynamic_type_and_remote_instances(self):
@@ -1983,8 +1970,8 @@ class CloudPickleTest(unittest.TestCase):
         """.format(
             protocol=self.protocol,
             config=self.config,
-            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics()
-            )
+            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics(),
+        )
         assert_run_python_script(code)
 
     def test_interactive_dynamic_type_and_stored_remote_instances(self):
@@ -2065,7 +2052,9 @@ class CloudPickleTest(unittest.TestCase):
             # method:
             assert w.run(lambda obj_id: lookup(obj_id).echo(43), id2) == 43
 
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(code)
 
     def test_dynamic_func_deterministic_roundtrip(self):
@@ -2076,11 +2065,15 @@ class CloudPickleTest(unittest.TestCase):
             def test_method(arg_1, arg_2):
                 pass
 
-            return cloudpickle.dumps(test_method, protocol=protocol, config=get_config(config))
+            return cloudpickle.dumps(
+                test_method, protocol=protocol, config=get_config(config)
+            )
 
         with subprocess_worker(protocol=self.protocol, config=self.config) as w:
             A_dump = w.run(get_dynamic_func_pickle, self.protocol, self.config)
-            check_deterministic_pickle(A_dump, get_dynamic_func_pickle(self.protocol, self.config))
+            check_deterministic_pickle(
+                A_dump, get_dynamic_func_pickle(self.protocol, self.config)
+            )
 
     def test_dynamic_class_deterministic_roundtrip(self):
         # Check that the pickle serialization for a dynamic class is the same
@@ -2119,7 +2112,12 @@ class CloudPickleTest(unittest.TestCase):
 
                 pass
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
             # If the `__doc__` attribute is defined after some other class
@@ -2131,7 +2129,12 @@ class CloudPickleTest(unittest.TestCase):
                 name = "A"
                 __doc__ = "Updated class definition"
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
             # If a `__doc__` is defined on the `__init__` method, this can
@@ -2142,7 +2145,12 @@ class CloudPickleTest(unittest.TestCase):
                     """Class definition with explicit __init__"""
                     pass
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
     def test_deterministic_str_interning_for_chained_dynamic_class_pickling(self):
@@ -2165,7 +2173,12 @@ class CloudPickleTest(unittest.TestCase):
                 def test_method(self, arg_1, join):
                     pass
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
             # Also check that memoization of string value inside the class does
@@ -2183,7 +2196,12 @@ class CloudPickleTest(unittest.TestCase):
             # the string used for the attribute name.
             A.join.arg_1 = "join"
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
     def test_dynamic_class_determinist_subworker_tuple_memoization(self):
@@ -2203,7 +2221,12 @@ class CloudPickleTest(unittest.TestCase):
                 def func2(self):
                     pass
 
-            A_dump = w.run(cloudpickle.dumps, A, protocol=self.protocol, config=get_config(self.config))
+            A_dump = w.run(
+                cloudpickle.dumps,
+                A,
+                protocol=self.protocol,
+                config=get_config(self.config),
+            )
             check_deterministic_pickle(A_dump, self.dumps(A))
 
     @pytest.mark.skipif(
@@ -2253,7 +2276,9 @@ class CloudPickleTest(unittest.TestCase):
             # iterations instead of 100 as used now (100x more data)
             assert growth < 5e7, growth
 
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(code)
 
     def test_pickle_reraise(self):
@@ -2333,7 +2358,7 @@ class CloudPickleTest(unittest.TestCase):
 
     def test_instance_with_slots(self):
         config = get_config(self.config)
-        should_maintain_isinstance_semantics = config.id_generator is not None 
+        should_maintain_isinstance_semantics = config.id_generator is not None
         for slots in [["registered_attribute"], "registered_attribute"]:
 
             class ClassWithSlots:
@@ -2351,8 +2376,8 @@ class CloudPickleTest(unittest.TestCase):
                 self.assertEqual(obj.registered_attribute, 42)
                 # I think this only throws if the original type is still defined
                 if should_maintain_isinstance_semantics:
-                  with pytest.raises(AttributeError):
-                      obj.non_registered_attribute = 1
+                    with pytest.raises(AttributeError):
+                        obj.non_registered_attribute = 1
 
             class SubclassWithSlots(ClassWithSlots):
                 def __init__(self):
@@ -2423,7 +2448,9 @@ class CloudPickleTest(unittest.TestCase):
         assert green1 is green2
         assert green1 is ClonedDynamicColor.GREEN
         assert green1 is not ClonedDynamicColor.BLUE
-        assert (ClonedDynamicColor is DynamicColor) == self.should_maintain_isinstance_semantics()
+        assert (
+            ClonedDynamicColor is DynamicColor
+        ) == self.should_maintain_isinstance_semantics()
 
     def test_interactively_defined_enum(self):
         code = """if __name__ == "__main__":
@@ -2462,8 +2489,8 @@ class CloudPickleTest(unittest.TestCase):
         """.format(
             protocol=self.protocol,
             config=self.config,
-            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics()
-            )
+            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics(),
+        )
         assert_run_python_script(code)
 
     def test_relative_import_inside_function(self):
@@ -2505,11 +2532,12 @@ class CloudPickleTest(unittest.TestCase):
         code = """
         import pytest
         from cloudpickle import loads, dumps
+        from testutils import get_config
 
         def f(a, /, b=1):
             return a + b
 
-        depickled_f = loads(dumps(f, protocol={protocol}))
+        depickled_f = loads(dumps(f, protocol={protocol}, config=get_config('{config}')))
 
         for func in (f, depickled_f):
             assert func(2) == 3
@@ -2517,7 +2545,9 @@ class CloudPickleTest(unittest.TestCase):
             with pytest.raises(TypeError):
                 func(a=2)
 
-        """.format(protocol=self.protocol, config=self.config)
+        """.format(
+            protocol=self.protocol, config=self.config
+        )
         assert_run_python_script(textwrap.dedent(code))
 
     def test___reduce___returns_string(self):
@@ -2573,9 +2603,7 @@ class CloudPickleTest(unittest.TestCase):
 
         data_instance = LocallyDefinedClass()
         buffers = []
-        pickle_bytes = self.dumps(
-            data_instance, buffer_callback=buffers.append
-        )
+        pickle_bytes = self.dumps(data_instance, buffer_callback=buffers.append)
         assert len(buffers) == 1
         reconstructed = pickle.loads(pickle_bytes, buffers=buffers)
         np.testing.assert_allclose(reconstructed.data, data_instance.data)
@@ -2618,14 +2646,16 @@ class CloudPickleTest(unittest.TestCase):
 
         class C(typing.Generic[T]):
             pass
-        
+
         config = get_config(self.config)
-        should_maintain_isinstance_semantics = config.id_generator is not None 
+        should_maintain_isinstance_semantics = config.id_generator is not None
         assert (self.pickle_depickle(C) is C) == should_maintain_isinstance_semantics
 
         # Identity is not part of the typing contract: only test for
         # equality instead.
-        assert (self.pickle_depickle(C[int]) == C[int]) == should_maintain_isinstance_semantics
+        assert (
+            self.pickle_depickle(C[int]) == C[int]
+        ) == should_maintain_isinstance_semantics
 
         with subprocess_worker(protocol=self.protocol, config=self.config) as worker:
 
@@ -2671,9 +2701,11 @@ class CloudPickleTest(unittest.TestCase):
 
         klasses = [Base, DerivedAny, LeafAny, DerivedInt, LeafInt, DerivedT, LeafT]
         config = get_config(self.config)
-        should_maintain_isinstance_semantics = config.id_generator is not None 
+        should_maintain_isinstance_semantics = config.id_generator is not None
         for klass in klasses:
-            assert (self.pickle_depickle(klass) is klass) == should_maintain_isinstance_semantics
+            assert (
+                self.pickle_depickle(klass) is klass
+            ) == should_maintain_isinstance_semantics
 
         with subprocess_worker(protocol=self.protocol, config=self.config) as worker:
 
@@ -3027,9 +3059,7 @@ class CloudPickleTest(unittest.TestCase):
             y: dataclasses.InitVar[int]
             z: typing.ClassVar[int]
 
-        PickledSampleDataclass = self.pickle_depickle(
-            SampleDataclass
-        )
+        PickledSampleDataclass = self.pickle_depickle(SampleDataclass)
 
         found_fields = list(PickledSampleDataclass.__dataclass_fields__.values())
         assert set(f.name for f in found_fields) == {"x", "y", "z"}
@@ -3044,33 +3074,40 @@ class CloudPickleTest(unittest.TestCase):
             assert f._field_type is expected_ftypes[f.name]
 
     def test_relative_filepaths_with_dynamic_types(self):
-      """Test relative filepath conversion using dynamically created types."""
-      import os
-      import collections
-      
-      # Dynamic namedtuple (creates code objects with __file__)
-      DynamicTuple = collections.namedtuple('DynamicTuple', ['field1', 'field2'])
-      
-      original_file = DynamicTuple._make.__code__.co_filename
-      self.assertTrue(os.path.isabs(original_file), 
-                    f"Original co_filename should be absolute: {original_file}")
-      
-      pickled_tuple_class = self.pickle_depickle(DynamicTuple)
-      pickled_co_filename = pickled_tuple_class._make.__code__.co_filename
-      pickled_file_path = pickled_tuple_class.__getnewargs__.__globals__['__file__']
-      
-      if self.config == 'use_relative_filepaths':
-          self.assertEqual(pickled_file_path, pickled_co_filename)
-          self.assertNotEqual(original_file, pickled_co_filename,
-                            "With relative config, co_filename should be converted")
-          self.assertTrue(not os.path.isabs(pickled_co_filename),
-                        f"Should be relative path: {pickled_co_filename}")
-      else:
-          self.assertEqual(original_file, pickled_co_filename,
-                          "With default config, co_filename should be preserved")
-          self.assertTrue(os.path.isabs(pickled_co_filename),
-                        f"Should remain absolute: {pickled_co_filename}")
+        """Test relative filepath conversion using dynamically created types."""
+        import os
+        import collections
 
+        # Dynamic namedtuple (creates code objects with __file__)
+        DynamicTuple = collections.namedtuple("DynamicTuple", ["field1", "field2"])
+
+        original_file = DynamicTuple._make.__code__.co_filename
+        self.assertTrue(
+            os.path.isabs(original_file),
+            f"Original co_filename should be absolute: {original_file}",
+        )
+
+        pickled_tuple_class = self.pickle_depickle(DynamicTuple)
+        pickled_co_filename = pickled_tuple_class._make.__code__.co_filename
+        pickled_file_path = pickled_tuple_class.__getnewargs__.__globals__["__file__"]
+
+        if self.config == "use_relative_filepaths":
+            self.assertEqual(pickled_file_path, pickled_co_filename)
+            self.assertNotEqual(
+                original_file,
+                pickled_co_filename,
+                "With relative config, co_filename should be converted",
+            )
+            self.assertTrue(
+                not os.path.isabs(pickled_co_filename),
+                f"Should be relative path: {pickled_co_filename}",
+            )
+        else:
+            self.assertEqual(
+                pickled_co_filename,
+                "<dynamic-code>",
+                "With default config, co_filename should be <dynamic-code>",
+            )
 
     def test_interactively_defined_dataclass_with_initvar_and_classvar(self):
         code = """if __name__ == "__main__":
@@ -3128,25 +3165,30 @@ class CloudPickleTest(unittest.TestCase):
         """.format(
             protocol=self.protocol,
             config=self.config,
-            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics()
-            )
+            should_maintain_isinstance_semantics=self.should_maintain_isinstance_semantics(),
+        )
         assert_run_python_script(code)
 
 
 class Protocol2CloudPickleTest(CloudPickleTest):
     protocol = 2
 
+
 class SequentialConfigCloudPickleTest(CloudPickleTest):
-    config = 'sequential'
+    config = "sequential"
+
 
 class NoTrackingConfigCloudPickleTest(CloudPickleTest):
-    config = 'no_tracking'
+    config = "no_tracking"
+
 
 class SkipResetConfigCloudPickleTest(CloudPickleTest):
-    config = 'skip_reset'
+    config = "skip_reset"
+
 
 class UseRelativeFilepathsCloudPickleTest(CloudPickleTest):
-    config = 'use_relative_filepaths'
+    config = "use_relative_filepaths"
+
 
 def test_lookup_module_and_qualname_dynamic_typevar():
     T = typing.TypeVar("T")
